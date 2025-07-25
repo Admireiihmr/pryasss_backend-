@@ -11,5 +11,6 @@ streamlit
 fastapi
 opencv-python
 pymongo
+uvicorn
 
 
