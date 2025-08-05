@@ -6,9 +6,19 @@ import io
 import tensorflow as tf
 from tensorflow.keras.models import model_from_json
 import base64
+from fastapi.middleware.cors import CORSMiddleware
 import os
 
 app = FastAPI(title="Oral Health Image Prediction API")
+
+# ✅ Add CORS middleware AFTER app is created
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Replace with specific domains in production
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 class ImageInput(BaseModel):
     file: str  # base64 encoded image string
@@ -38,7 +48,7 @@ async def predict(image_data: ImageInput):
         img_bytes = base64.b64decode(image_data.file)
         img = Image.open(io.BytesIO(img_bytes)).convert("RGB")
         img = img.resize((224, 224))
-        
+
         # Preprocess image
         img_array = np.expand_dims(np.array(img) / 255.0, axis=0)
 
@@ -48,17 +58,17 @@ async def predict(image_data: ImageInput):
         pred_percent_rounded = [round(p, 2) for p in pred_percent]
 
         return {
-            "prediction_percentages": pred_percent_rounded,
+            "prediction": pred_percent_rounded,
             "predicted_class": int(np.argmax(prediction))
         }
-    
+
     except UnidentifiedImageError:
         raise HTTPException(status_code=400, detail="Invalid image format.")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Prediction failed: {e}")
 
-# Use Render or default local port
+# Run locally (not needed on Render)
 if __name__ == "__main__":
     import uvicorn
-    port = int(os.environ.get("PORT", 8000))  # Use secure port or default
+    port = int(os.environ.get("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
