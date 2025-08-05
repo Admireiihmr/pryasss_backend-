@@ -1,44 +1,47 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
+from fastapi.middleware.cors import CORSMiddleware
+
 import numpy as np
 from PIL import Image, UnidentifiedImageError
 import io
+import base64
+import os
 import tensorflow as tf
 from tensorflow.keras.models import model_from_json
-import base64
-from fastapi.middleware.cors import CORSMiddleware
-import os
 
 app = FastAPI(title="Oral Health Image Prediction API")
 
-# ✅ Add CORS middleware AFTER app is created
+# CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Replace with specific domains in production
+    allow_origins=["*"],  # Allow all for now; restrict in production
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+# Base64 image input model
 class ImageInput(BaseModel):
     file: str  # base64 encoded image string
 
-# Load and compile model once during startup
+# Load model once at startup
 def load_model():
     try:
-        with open('model.json', 'r') as json_file:
+        with open("model.json", "r") as json_file:
             model_json = json_file.read()
         model = model_from_json(model_json)
-        model.load_weights('model_weights.keras')
+        model.load_weights("model_weights.keras")
         model.compile(
             optimizer=tf.keras.optimizers.Adam(learning_rate=0.0001),
-            loss='categorical_crossentropy',
-            metrics=['accuracy']
+            loss="categorical_crossentropy",
+            metrics=["accuracy"],
         )
         return model
     except Exception as e:
-        raise RuntimeError(f"Failed to load model: {e}")
+        raise RuntimeError(f"Model loading failed: {e}")
 
+# Load model into memory
 model = load_model()
 
 @app.post("/predict")
@@ -49,25 +52,26 @@ async def predict(image_data: ImageInput):
         img = Image.open(io.BytesIO(img_bytes)).convert("RGB")
         img = img.resize((224, 224))
 
-        # Preprocess image
+        # Convert to array and normalize
         img_array = np.expand_dims(np.array(img) / 255.0, axis=0)
 
-        # Predict
+        # Make prediction
         prediction = model.predict(img_array)
-        pred_percent = (prediction * 100).tolist()[0]
-        pred_percent_rounded = [round(p, 2) for p in pred_percent]
+        percent_scores = (prediction[0] * 100).tolist()
+        rounded_scores = [round(score, 2) for score in percent_scores]
+        predicted_class = int(np.argmax(prediction[0]))
 
         return {
-            "prediction": pred_percent_rounded,
-            "predicted_class": int(np.argmax(prediction))
+            "prediction": rounded_scores,
+            "predicted_class": predicted_class
         }
 
     except UnidentifiedImageError:
         raise HTTPException(status_code=400, detail="Invalid image format.")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Prediction failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Prediction failed: {str(e)}")
 
-# Run locally (not needed on Render)
+# Optional: Run locally
 if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 8000))
