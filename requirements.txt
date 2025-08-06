@@ -9,9 +9,9 @@ torch
 torchvision
 streamlit
 fastapi
-opencv-python
 pymongo
 uvicorn
+opencv-python-headless
 
 
 
