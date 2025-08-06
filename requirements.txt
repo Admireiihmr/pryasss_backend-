@@ -1,6 +1,6 @@
 numpy
 pandas
-tensorflow>=2.11
+tensorflow
 seaborn
 matplotlib
 tqdm
@@ -12,6 +12,7 @@ fastapi
 pymongo
 uvicorn
 opencv-python-headless
+
 
 
 
