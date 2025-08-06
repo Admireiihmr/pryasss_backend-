@@ -94,7 +94,7 @@ class ImageInput(BaseModel):
     file: str
 
 # ✅ Load full model (saved as model.keras)
-lm = tf.keras.models.load_model("model.keras")
+lm = tf.keras.models.load_model("model_weights.keras")
 
 @app.post("/predict")
 async def predict(image_data: ImageInput):
@@ -113,4 +113,5 @@ async def predict(image_data: ImageInput):
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="127.0.0.1", port=5001)
+
 
