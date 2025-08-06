@@ -4,6 +4,7 @@ import numpy as np
 import requests
 from datetime import datetime
 import io
+import cv2
 import base64
 import bson.binary
 import warnings
