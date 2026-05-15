@@ -33,16 +33,16 @@ async def lifespan(app: FastAPI):
         print("Architecture downloaded.")
 
     print("Loading model...")
-    with open(JSON_PATH, "r") as f:
-        lm = tf.keras.models.model_from_json(f.read())
-    lm.load_weights(MODEL_PATH)
-    lm.compile(
-        optimizer=tf.keras.optimizers.Adam(learning_rate=0.0001),
-        loss="categorical_crossentropy",
-        metrics=["accuracy"]
-    )
-    print("Model loaded successfully.")
-    yield
+with open(JSON_PATH, "r") as f:
+    model_json = f.read()
+lm = tf.keras.models.model_from_json(model_json)
+lm.load_weights(MODEL_PATH)
+lm.compile(
+    optimizer=tf.keras.optimizers.Adam(learning_rate=0.0001),
+    loss="categorical_crossentropy",
+    metrics=["accuracy"]
+)
+print("Model loaded successfully.")
 
 app = FastAPI(lifespan=lifespan)
 
