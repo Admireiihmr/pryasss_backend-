@@ -1,6 +1,5 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
-from contextlib import asynccontextmanager
 import numpy as np
 from PIL import Image
 import io
@@ -18,33 +17,24 @@ JSON_URL = "https://huggingface.co/akhilarayampalli/Prayaas/resolve/main/model.j
 
 lm = None
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    global lm
+app = FastAPI()
 
+@app.on_event("startup")
+async def startup_event():
+    global lm
     if not os.path.exists(MODEL_PATH):
         print("Downloading weights...")
         urllib.request.urlretrieve(MODEL_URL, MODEL_PATH)
-        print(f"Weights downloaded. Size: {os.path.getsize(MODEL_PATH)} bytes")
-
     if not os.path.exists(JSON_PATH):
-        print("Downloading model architecture...")
+        print("Downloading architecture...")
         urllib.request.urlretrieve(JSON_URL, JSON_PATH)
-        print("Architecture downloaded.")
-
     print("Loading model...")
-with open(JSON_PATH, "r") as f:
-    model_json = f.read()
-lm = tf.keras.models.model_from_json(model_json)
-lm.load_weights(MODEL_PATH)
-lm.compile(
-    optimizer=tf.keras.optimizers.Adam(learning_rate=0.0001),
-    loss="categorical_crossentropy",
-    metrics=["accuracy"]
-)
-print("Model loaded successfully.")
-
-app = FastAPI(lifespan=lifespan)
+    with open(JSON_PATH, "r") as f:
+        lm = tf.keras.models.model_from_json(f.read())
+    lm.load_weights(MODEL_PATH)
+    lm.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.0001),
+               loss="categorical_crossentropy", metrics=["accuracy"])
+    print("Model loaded successfully.")
 
 class ImageInput(BaseModel):
     file: str
