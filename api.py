@@ -19,11 +19,19 @@ lm = None
 async def lifespan(app: FastAPI):
     global lm
     if not os.path.exists(MODEL_PATH):
-        print("Downloading model...")
-        urllib.request.urlretrieve(MODEL_URL, MODEL_PATH)
-        print("Download complete.")
+        print(f"Model not found locally. Downloading from {MODEL_URL}...")
+        try:
+            urllib.request.urlretrieve(MODEL_URL, MODEL_PATH)
+            print(f"Download complete. File size: {os.path.getsize(MODEL_PATH)} bytes")
+        except Exception as e:
+            print(f"Download FAILED: {e}")
+            raise
+    else:
+        print(f"Model found locally. File size: {os.path.getsize(MODEL_PATH)} bytes")
+
+    print("Loading model...")
     lm = tf.keras.models.load_model(MODEL_PATH)
-    print("Model loaded.")
+    print("Model loaded successfully.")
     yield
 
 app = FastAPI(lifespan=lifespan)
