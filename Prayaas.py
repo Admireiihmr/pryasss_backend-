@@ -11,16 +11,7 @@ import warnings
 
 warnings.filterwarnings("ignore")
 
-# Optional: MongoDB setup (commented)
-# from pymongo import MongoClient
-# from dotenv import load_dotenv
-# import os
-# load_dotenv()
-# MONGO_URI = os.getenv("MONGO_URI")
-# client = MongoClient(MONGO_URI)
-# db = client['iihmr']
-# ic = db['patientinfo']
-
+BACKEND_URL = "https://pryasss-backend.onrender.com"
 
 def get_current_date():
     try:
@@ -60,29 +51,43 @@ def process_image(image):
     return image, image_clahe
 
 
+def wake_server():
+    try:
+        with st.spinner("⏳ Waking up the model server, please wait (may take up to 60s)..."):
+            requests.get(BACKEND_URL, timeout=60)
+    except Exception:
+        pass
+
+
 def work(img):
+    wake_server()
+
     image = Image.fromarray(img)
     buffer = io.BytesIO()
     image.save(buffer, format='PNG')
     buffer.seek(0)
-
     img_data = base64.b64encode(buffer.read()).decode("utf-8")
 
     try:
-        response = requests.post("https://pryasss-backend.onrender.com/predict", json={"file": img_data}, timeout=10)
+        response = requests.post(
+            f"{BACKEND_URL}/predict",
+            json={"file": img_data},
+            timeout=120
+        )
         if response.status_code == 200:
             try:
                 res = response.json()
+                predictions = res["predictions"]
                 labels = ['Oral Cancer', 'No Abnormality detected', 'Oral premalignant lesion']
                 for i in range(3):
-                    st.subheader(f"Probability of class '{labels[i]}': {res[i]:.1f}%")
-                return res
+                    st.subheader(f"Probability of class '{labels[i]}': {predictions[i]:.1f}%")
+                return predictions
             except Exception as e:
                 st.error(f"⚠️ Failed to parse response from model. Error: {e}")
         else:
             st.error(f"⚠️ Model API returned status code: {response.status_code}")
     except requests.exceptions.RequestException as e:
-        st.error(f"⚠️ Could not connect to model API. Is the server running? Error: {e}")
+        st.error(f"⚠️ Could not connect to model API. Error: {e}")
 
     return [0, 0, 0]
 
@@ -139,7 +144,6 @@ def main():
 
     if image is not None and sub:
         original_image, processed_image = process_image(image)
-
         st.image(original_image, caption='Enhanced Image', width=224)
 
         if not abha:
@@ -171,4 +175,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
