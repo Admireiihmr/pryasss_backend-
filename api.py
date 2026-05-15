@@ -10,7 +10,8 @@ import base64
 import os
 import urllib.request
 
-MODEL_PATH = "model_weights.keras"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+MODEL_PATH = os.path.join(BASE_DIR, "model_weights.keras")
 MODEL_URL = "https://huggingface.co/akhilarayampalli/Prayaas/resolve/main/model_weights.keras"
 
 lm = None
