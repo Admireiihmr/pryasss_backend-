@@ -1,5 +1,6 @@
-fastapi
-uvicorn
-tensorflow-cpu==2.13.0
+streamlit
 pillow
 numpy
+requests
+opencv-python-headless
+pymongo
