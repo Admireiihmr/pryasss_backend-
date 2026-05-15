@@ -12,26 +12,35 @@ import urllib.request
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_PATH = os.path.join(BASE_DIR, "model_weights.keras")
+JSON_PATH = os.path.join(BASE_DIR, "model.json")
 MODEL_URL = "https://huggingface.co/akhilarayampalli/Prayaas/resolve/main/model_weights.keras"
+JSON_URL = "https://huggingface.co/akhilarayampalli/Prayaas/resolve/main/model.json"
 
 lm = None
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global lm
+
     if not os.path.exists(MODEL_PATH):
-        print(f"Model not found locally. Downloading from {MODEL_URL}...")
-        try:
-            urllib.request.urlretrieve(MODEL_URL, MODEL_PATH)
-            print(f"Download complete. File size: {os.path.getsize(MODEL_PATH)} bytes")
-        except Exception as e:
-            print(f"Download FAILED: {e}")
-            raise
-    else:
-        print(f"Model found locally. File size: {os.path.getsize(MODEL_PATH)} bytes")
+        print("Downloading weights...")
+        urllib.request.urlretrieve(MODEL_URL, MODEL_PATH)
+        print(f"Weights downloaded. Size: {os.path.getsize(MODEL_PATH)} bytes")
+
+    if not os.path.exists(JSON_PATH):
+        print("Downloading model architecture...")
+        urllib.request.urlretrieve(JSON_URL, JSON_PATH)
+        print("Architecture downloaded.")
 
     print("Loading model...")
-    lm = tf.keras.models.load_model(MODEL_PATH)
+    with open(JSON_PATH, "r") as f:
+        lm = tf.keras.models.model_from_json(f.read())
+    lm.load_weights(MODEL_PATH)
+    lm.compile(
+        optimizer=tf.keras.optimizers.Adam(learning_rate=0.0001),
+        loss="categorical_crossentropy",
+        metrics=["accuracy"]
+    )
     print("Model loaded successfully.")
     yield
 
