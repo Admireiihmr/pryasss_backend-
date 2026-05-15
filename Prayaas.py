@@ -69,7 +69,7 @@ def work(img):
     img_data = base64.b64encode(buffer.read()).decode("utf-8")
 
     try:
-        response = requests.post("https://your-service-name.onrender.com/predict", json={"file": img_data}, timeout=10)
+        response = requests.post("https://pryasss-backend.onrender.com/predict", json={"file": img_data}, timeout=10)
         if response.status_code == 200:
             try:
                 res = response.json()
