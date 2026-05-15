@@ -16,7 +16,6 @@ MODEL_URL = "https://huggingface.co/akhilarayampalli/Prayaas/resolve/main/model_
 JSON_URL = "https://huggingface.co/akhilarayampalli/Prayaas/resolve/main/model.json"
 
 lm = None
-
 app = FastAPI()
 
 @app.on_event("startup")
@@ -35,6 +34,10 @@ async def startup_event():
     lm.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.0001),
                loss="categorical_crossentropy", metrics=["accuracy"])
     print("Model loaded successfully.")
+
+@app.get("/")
+async def health_check():
+    return {"status": "ok"}
 
 class ImageInput(BaseModel):
     file: str
